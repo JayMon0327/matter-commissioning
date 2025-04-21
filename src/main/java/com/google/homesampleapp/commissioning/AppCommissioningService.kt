@@ -82,7 +82,9 @@ class AppCommissioningService : Service(), CommissioningService.Callback {
   }
 
   override fun onCommissioningRequested(metadata: CommissioningRequestMetadata) {
-    Timber.d(
+      Timber.e("📡 target = ${metadata.networkLocation.ipAddress.hostAddress}:${metadata.networkLocation.port}")
+
+      Timber.d(
         "*** onCommissioningRequested ***:\n" +
             "\tdeviceDescriptor: " +
             "deviceType [${metadata.deviceDescriptor.deviceType}] " +
@@ -98,6 +100,7 @@ class AppCommissioningService : Service(), CommissioningService.Callback {
         val deviceId = getNextDeviceId(DeviceIdGenerator.Random)
         try {
             Timber.d("Commissioning: Starting PASE connection...")
+            Timber.e("📡 target = ${metadata.networkLocation.ipAddress.hostAddress}:${metadata.networkLocation.port}")
             chipClient.awaitEstablishPaseConnection(
                 deviceId,
                 metadata.networkLocation.ipAddress.hostAddress!!,

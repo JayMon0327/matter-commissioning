@@ -562,7 +562,7 @@ fun commissionDevice(
     CommissioningRequest.builder()
       .setCommissioningService(ComponentName(context, AppCommissioningService::class.java))
       .build()
-
+  Timber.e("🧩 [START] 커미셔닝 요청 생성됨 → 서비스 설정 완료됨")
   // The call to commissionDevice() creates the IntentSender that will eventually be launched
   // in the fragment to trigger the commissioning activity in GPS.
   Matter.getCommissioningClient(context)

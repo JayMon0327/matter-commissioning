@@ -61,6 +61,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import timber.log.Timber
 
 // -----------------------------------------------------------------------------
@@ -204,7 +205,9 @@ constructor(
    * through GMSCore? All we're missing is network location.
    */
   fun multiadminCommissioning(intent: Intent, context: Context) {
+    Timber.e("🧩 CommissioningRequest: setCommissioningService 호출됨")
     Timber.d("multiadminCommissioning: starting")
+
 
     val sharedDeviceData = fromIntent(intent)
     Timber.d("multiadminCommissioning: sharedDeviceData [${sharedDeviceData}]")
@@ -213,6 +216,8 @@ constructor(
     val commissionRequestBuilder =
       CommissioningRequest.builder()
         .setCommissioningService(ComponentName(context, AppCommissioningService::class.java))
+
+    Timber.e("🧩 CommissioningRequest: setCommissioningService 호출됨 - ${AppCommissioningService::class.java.name}")
 
     // EXTRA_COMMISSIONING_WINDOW_EXPIRATION is a hint of how much time is remaining in the
     // commissioning window for multi-admin. It is based on the current system uptime.
@@ -258,6 +263,9 @@ constructor(
     commissionRequestBuilder.setOnboardingPayload(manualPairingCode)
 
     val commissioningRequest = commissionRequestBuilder.build()
+    Timber.e("🧩 CommissioningRequest: onboardingPayload = ${commissioningRequest.onboardingPayload}")
+    Timber.e("🧩 CommissioningRequest: deviceInfo = vendorId=${commissioningRequest.deviceInfo?.vendorId}, productId=${commissioningRequest.deviceInfo?.productId}")
+
 
     Timber.d(
       "multiadmin: commissioningRequest " +
@@ -294,7 +302,33 @@ constructor(
     // Add the device to the devices repository.
     _showNewDeviceNameAlertDialog.value = false
     viewModelScope.launch {
-      val deviceId = gpsCommissioningResult?.token?.toLong()!!
+      // ✅ [추가] Step 2 - token에서 JSON 파싱
+      val tokenJson = gpsCommissioningResult?.token
+      if (tokenJson == null) {
+        Timber.e("Commissioning token is null")
+        showMsgDialog("Commissioning Error", "Token is null.")
+        return@launch
+      }
+
+      val deviceId: Long
+      val vendorId: String
+      val productId: String
+      val deviceType: Long
+
+      try {
+        val json = JSONObject(tokenJson)
+        deviceId = json.getString("deviceId").toLong()
+        vendorId = json.getString("vendorId")
+        productId = json.getString("productId")
+        deviceType = json.getString("deviceType").toLong()
+      } catch (e: Exception) {
+        Timber.e(e, "Failed to parse commissioning token")
+        showMsgDialog("Commissioning Error", "Invalid token format.\n\n${e.message}")
+        return@launch
+      }
+
+
+
       // read device's vendor name and product name
       val vendorName =
         try {
@@ -319,17 +353,17 @@ constructor(
             .setName(deviceName) // default name that can be overridden by user in next step
             .setDeviceId(deviceId)
             .setDateCommissioned(getTimestampForNow())
-            .setVendorId(gpsCommissioningResult?.commissionedDeviceDescriptor?.vendorId.toString())
+            .setVendorId(vendorId)
             .setVendorName(vendorName)
             .setProductId(
-              gpsCommissioningResult?.commissionedDeviceDescriptor?.productId.toString()
+              productId
             )
             .setProductName(productName)
             // Note that deviceType is now deprecated. Need to get it by introspecting
             // the device information. This is done below.
             .setDeviceType(
               convertToAppDeviceType(
-                gpsCommissioningResult?.commissionedDeviceDescriptor?.deviceType?.toLong()!!
+                deviceType
               )
             )
             .build()
@@ -380,8 +414,10 @@ constructor(
         clustersHelper.writeBasicClusterNodeLabelAttribute(deviceId, deviceName)
       } catch (ex: Exception) {
         val title = "Failed to write NodeLabel"
+        showMsgDialog("Failed to write NodeLabel", ex.toString())
         Timber.e(title, ex)
         showMsgDialog(title, "$ex")
+
       }
     }
   }

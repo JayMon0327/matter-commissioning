@@ -68,7 +68,12 @@
         <service
             android:name="com.google.homesampleapp.commissioning.AppCommissioningService"
             android:exported="true"
-            />
+            android:permission="com.google.android.gms.permission.BIND_MATTER_COMMISSIONING_SERVICE">
+            <intent-filter>
+                <action android:name="com.google.android.gms.home.matter.COMMISSIONING_SERVICE" />
+            </intent-filter>
+        </service>
+
 
         <service android:name="com.google.android.gms.metadata.ModuleDependencies"
             android:enabled="false"

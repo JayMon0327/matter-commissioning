@@ -1,1 +1,21 @@
-/build
+# Android Studio
+.gradle/
+.idea/
+*.iml
+local.properties
+*.log
+
+# Build outputs
+build/
+out/
+captures/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Generated files
+*.apk
+*.aar
+*.jar
+*.zip

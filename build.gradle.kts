@@ -92,6 +92,10 @@ android {
          * By default, Android Studio configures the release build type to enable code
          * shrinking, using minifyEnabled, and specifies the default ProGuard rules file.
          */
+        getByName("debug") {
+            isMinifyEnabled = false // 👈 추가
+        }
+
         getByName("release") {
             isMinifyEnabled = false
             proguardFiles(
